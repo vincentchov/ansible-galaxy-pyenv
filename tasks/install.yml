@@ -42,7 +42,30 @@
 - name: Update Pyenv interpreter list
   shell: . {{ pyenv_path }}/.pyenvrc && pyenv update
   when: pyenv_update
-  
+
+- name: Search for existing Python interpreters
+  stat:
+    path: "{{ pyenv_path }}/versions/{{ item }}"
+  register: existing_python_installations
+  loop: "{{ pyenv_python_versions }}"
+
+- name: Copy over check-configure-options.py
+  template:
+    src: templates/check-configure-options.py.j2
+    dest: "{{ ansible_env.HOME }}/check-configure-options.py"
+    owner: "{{ pyenv_owner }}"
+    group: "{{ pyenv_owner }}"
+    mode: "0755"
+
+- name: Check each one's PYTHON_CONFIGURE_OPTS options
+  shell: "{{ item.stat.path }}/bin/python {{ ansible_env.HOME }}/check-configure-options.py"
+  register: py_installs_w_wrong_flags
+  when: item.stat.exists and item.stat.isdir
+  changed_when: py_installs_w_wrong_flags.stdout == 'False'
+  loop: "{{ existing_python_installations.results }}"
+  loop_control:
+    label: "{{ {'item': item.item, 'stat': {'exists': item.stat.exists }} }}"
+
 - name: Install Python interpreters "{{ pyenv_python_versions }}"
   shell: . {{ pyenv_path }}/.pyenvrc && env PYTHON_CONFIGURE_OPTS="{{ pyenv_python_configure_opts }}" pyenv install {{ item }}
          creates="{{ pyenv_path }}/versions/{{ item }}/bin/python"
