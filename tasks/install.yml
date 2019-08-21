@@ -86,6 +86,12 @@
     creates: "{{ pyenv_path }}/versions/{{ item }}/bin/python"
   with_items: "{{ pyenv_python_versions }}"
 
+- name: Upgrade pip
+  shell: "{{ pyenv_path }}/versions/{{ item }}/bin/python -m pip install --upgrade pip"
+  register: pip_upgrade
+  changed_when: "'Successfully installed pip' in pip_upgrade.stdout"
+  loop: "{{ pyenv_python_versions }}"
+
 - name: Create virtual environments
   shell: . {{ pyenv_path }}/.pyenvrc && pyenv virtualenv {{ item.py_version }} {{ item.venv_name }}
          creates="{{ pyenv_path }}/versions/{{ item.venv_name }}/bin/python"
