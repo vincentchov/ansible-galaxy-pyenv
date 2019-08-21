@@ -67,6 +67,15 @@
     loop: "{{ existing_python_installations.results }}"
     loop_control:
       label: "{{ {'item': item.item, 'stat': {'exists': item.stat.exists }} }}"
+
+  - name: Uninstall existing Python interpreters w/ wrong compilation flags
+    shell: ". {{ pyenv_path }}/.pyenvrc && pyenv uninstall -f {{ item.item.item }}"
+    args:
+      removes: "{{ item.item.stat.path }}"
+    when: item.changed and item.stdout == 'False'
+    loop: "{{ py_installs_w_wrong_flags.results }}"
+    loop_control:
+      label: "{{ item.item.item }}"
   when: pyenv_python_configure_opts
 
 - name: Install Python interpreters "{{ pyenv_python_versions }}"
